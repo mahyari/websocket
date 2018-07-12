@@ -39,7 +39,7 @@ func fastHTTPHeaderContainsValue(hdr fasthttp.RequestHeader, header string, valu
 type FastHTTPUpgrader struct {
 	// Handler receives a websocket connection after the handshake has been
 	// completed. This must be provided.
-	Handler func(*Conn)
+	Handler func(*Conn, *fasthttp.RequestCtx)
 
 	// ReadBufferSize and WriteBufferSize specify I/O buffer sizes. If a buffer
 	// size is zero, then a default value of 4096 is used. The I/O buffer sizes
@@ -132,6 +132,6 @@ func (f *FastHTTPUpgrader) UpgradeHandler(ctx *fasthttp.RequestCtx) {
 		if subprotocol != "" {
 			c.subprotocol = subprotocol
 		}
-		f.Handler(c)
+		f.Handler(c, ctx)
 	})
 }
