@@ -13,8 +13,10 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func checkSameOriginFastHTTP(ctx *fasthttp.RequestCtx) bool {
-	return checkSameOriginFromHeaderAndHost(string(ctx.Request.Header.Peek(originHeader)), string(ctx.Host()))
+func checkSameOriginFastHTTP(ctx *fasthttp.RequestCtx) (bool, AuthToken) {
+	isValid := checkSameOriginFromHeaderAndHost(string(ctx.Request.Header.Peek(originHeader)), string(ctx.Host()))
+
+	return isValid, AuthToken{}
 }
 
 func fastHTTPHeaderContainsValue(hdr fasthttp.RequestHeader, header string, value string) bool {
@@ -39,7 +41,7 @@ func fastHTTPHeaderContainsValue(hdr fasthttp.RequestHeader, header string, valu
 type FastHTTPUpgrader struct {
 	// Handler receives a websocket connection after the handshake has been
 	// completed. This must be provided.
-	Handler func(*Conn, *fasthttp.RequestCtx)
+	Handler func(*Conn, AuthToken)
 
 	// ReadBufferSize and WriteBufferSize specify I/O buffer sizes. If a buffer
 	// size is zero, then a default value of 4096 is used. The I/O buffer sizes
@@ -55,7 +57,7 @@ type FastHTTPUpgrader struct {
 	// CheckOrigin returns true if the request Origin header is acceptable. If
 	// CheckOrigin is nil, the host in the Origin header must not be set or
 	// must match the host of the request.
-	CheckOrigin func(ctx *fasthttp.RequestCtx) bool
+	CheckOrigin func(ctx *fasthttp.RequestCtx) (bool, AuthToken)
 }
 
 var websocketVersionByte = []byte(websocketVersion)
@@ -98,7 +100,8 @@ func (f *FastHTTPUpgrader) UpgradeHandler(ctx *fasthttp.RequestCtx) {
 	if checkOrigin == nil {
 		checkOrigin = checkSameOriginFastHTTP
 	}
-	if !checkOrigin(ctx) {
+	isValid, authToken := checkOrigin(ctx)
+	if !isValid {
 		ctx.Error("websocket: origin not allowed", fasthttp.StatusForbidden)
 		return
 	}
@@ -132,6 +135,6 @@ func (f *FastHTTPUpgrader) UpgradeHandler(ctx *fasthttp.RequestCtx) {
 		if subprotocol != "" {
 			c.subprotocol = subprotocol
 		}
-		f.Handler(c, ctx)
+		f.Handler(c, authToken)
 	})
 }
