@@ -6,10 +6,11 @@ import (
 )
 
 type AuthToken struct {
-	Id         int    `json:"id"`
+	UserId     int    `json:"user_id"`
 	Salt       string `json:"salt"`
 	CreationAt int64  `json:"creation_at"`
 	Sign       string `json:"sign"`
+	ClientId   string `json:"client_id"`
 }
 
 func (a AuthToken) String() string {
